@@ -3,6 +3,10 @@
 }
 
 .bank {
-    display: flex;
-    
+  position: fixed;
+  bottom: 2rem;   /* spacing from the bottom */
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1rem;
 }
