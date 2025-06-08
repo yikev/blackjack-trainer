@@ -1,3 +1,5 @@
+import cardBack from '../assets/card-back.png';
+
 function Card({ rank, suit, faceDown = false }) {
   const getSymbol = (suit) => {
     switch (suit) {
@@ -28,6 +30,18 @@ function Card({ rank, suit, faceDown = false }) {
     boxShadow: '1px 1px 5px rgba(0, 0, 0, 0.3)',
     userSelect: 'none',
   };
+
+  if (faceDown) {
+    return (
+      <div style={cardStyle}>
+        <img
+          src={cardBack}
+          alt="Card back"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`card ${faceDown ? 'face-down' : ''}`} style={cardStyle}>
