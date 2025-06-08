@@ -1,27 +1,3 @@
-* {
-    /* outline: 2px solid red; */
-}
-
-.bank {
-  position: fixed;
-  bottom: 2rem;   /* spacing from the bottom */
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 1rem;
-}
-
-@keyframes dealCard {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
 .card-container {
   perspective: 1000px;
   width: 60px;
@@ -63,4 +39,15 @@
   background-color: #2e2e2e;
   color: white;
   transform: rotateY(180deg);
+}
+
+.card {
+  transition: transform 0.2s ease;
+  transform-style: preserve-3d;
+}
+
+.card.face-down {
+  transform: rotateY(180deg);
+  background-color: #2e2e2e;
+  color: white;
 }
