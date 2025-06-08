@@ -12,22 +12,23 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 function GamePage() {
 
     const DECKS_IN_PLAY = 6; // or whatever you choose
-    const TOTAL_CARDS = DECKS_IN_PLAY * 52;
 
     const handleReset = () => {
         setPlayerHand([]);
         setDealerHand([]);
+        setDeck(createShuffledDeck(numDecks));
         setCurrentBet(0);
         setBankroll(1000);
         setRunningCount(0);
         setDecksRemaining(6);
+        setCardsDealt(0);
         setIsPlaying(false); // ⬅ Game is no longer active
         console.log('Resetting table...');
     };
     const handleDeal = () => {
     if (deck.length < 15) {
         console.log("DECK SHUFFLED");
-        setDeck(createShuffledDeck());
+        setDeck(createShuffledDeck(numDecks));
         setRunningCount(0);
         setDecksRemaining(6);
         return;
@@ -294,7 +295,10 @@ function GamePage() {
     const [feedbackMessage, setFeedbackMessage] = useState('');
     const [runningCount, setRunningCount] = useState(0);
     const [cardsDealt, setCardsDealt] = useState(0);
-    const [decksRemaining, setDecksRemaining] = useState(DECKS_IN_PLAY);
+    const [numDecks, setNumDecks] = useState(2);
+    const [decksRemaining, setDecksRemaining] = useState(numDecks);
+
+    const TOTAL_CARDS = numDecks * 52;
 
     function updateCount(card) {
         const value = card.rank;
@@ -409,9 +413,9 @@ function GamePage() {
     };
 
     useEffect(() => {
-        const decks = Math.max((TOTAL_CARDS - cardsDealt) / 52, 1);
+        const decks = Math.max((numDecks * 52 - cardsDealt) / 52, 1);
         setDecksRemaining(decks);
-    }, [cardsDealt]);
+    }, [cardsDealt, numDecks]);
 
     useEffect(() => {
         if (!isPlaying) {
@@ -438,6 +442,29 @@ function GamePage() {
                 {feedbackMessage}
             </div>
         )}
+
+        <div style={{ marginBottom: '1rem' }}>
+        <label htmlFor="deckSelect">Number of Decks: </label>
+        <select
+            id="deckSelect"
+            value={numDecks}
+            onChange={(e) => {
+            const decks = parseInt(e.target.value);
+            setNumDecks(decks);
+            setDeck(createShuffledDeck(decks)); // reshuffle with new count
+            setRunningCount(0);
+            setCardsDealt(0);
+            setDecksRemaining(decks);
+            setBankroll(1000); // optional: reset game state
+            setCurrentBet(0);
+            }}
+            disabled={isPlaying} // disable mid-hand
+        >
+            {[2, 3, 4, 5, 6].map(n => (
+            <option key={n} value={n}>{n}</option>
+            ))}
+        </select>
+        </div>
 
         {/* Buttons */}
         <div style={{ marginTop: '2rem' }}>
