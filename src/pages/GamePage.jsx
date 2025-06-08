@@ -4,12 +4,16 @@ import Button from '../components/Button';
 import Chip from '../components/Chip';
 import Card from '../components/Card';
 import '../components/Card.css';
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { createShuffledDeck } from '../utils/deck';
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 function GamePage() {
+
+    const DECKS_IN_PLAY = 6; // or whatever you choose
+    const TOTAL_CARDS = DECKS_IN_PLAY * 52;
+
     const handleReset = () => {
         setPlayerHand([]);
         setDealerHand([]);
@@ -20,7 +24,10 @@ function GamePage() {
     };
     const handleDeal = () => {
     if (deck.length < 15) {
+        console.log("DECK SHUFFLED");
         setDeck(createShuffledDeck());
+        setRunningCount(0);
+        setDecksRemaining(6);
         return;
     }
 
@@ -29,6 +36,12 @@ function GamePage() {
     const d1 = newDeck.pop();
     const p2 = newDeck.pop();
     const d2 = newDeck.pop();
+
+    updateCount(p1);
+    updateCount(d1);
+    updateCount(p2);
+    updateCount(d2);
+    setCardsDealt(prev => prev + 4);
 
     // Clear current state to simulate dealing animation
     setPlayerHands([[]]);
@@ -98,6 +111,8 @@ function GamePage() {
 
         setDeck(newDeck);
         setPlayerHands(updatedHands);
+        updateCount(newCard);
+        setCardsDealt(prev => prev + 1);
 
         const handValue = calculateHandValue(updatedHands[activeHandIndex]);
 
@@ -143,6 +158,8 @@ function GamePage() {
         let updatedDealer = [...revealed];
         while (calculateHandValue(updatedDealer) < 17) {
             const nextCard = newDeck.pop();
+            updateCount(nextCard);
+            setCardsDealt(prev => prev + 1);
             updatedDealer.push(nextCard);
             setDealerHand([...updatedDealer]);
             await sleep(800); // delay between draws
@@ -207,8 +224,14 @@ function GamePage() {
         }
 
         const newDeck = [...deck];
-        const hand1 = [currentHand[0], newDeck.pop()];
-        const hand2 = [currentHand[1], newDeck.pop()];
+        const c1 = newDeck.pop();
+        const c2 = newDeck.pop();
+        updateCount(c1);
+        updateCount(c2);
+        setCardsDealt(prev => prev + 2);
+
+        const hand1 = [currentHand[0], c1];
+        const hand2 = [currentHand[1], c2];
 
         setPlayerHands([hand1, hand2]);
         setActiveHandIndex(0);
@@ -222,6 +245,8 @@ function GamePage() {
 
         const newDeck = [...deck];
         const newCard = newDeck.pop();
+        updateCount(newCard);
+        setCardsDealt(prev => prev + 1);
 
         // Update bet and bankroll
         setBankroll(bankroll - currentBet);
@@ -265,6 +290,19 @@ function GamePage() {
     const [splitActive, setSplitActive] = useState(false);
     const [isDealing, setIsDealing] = useState(false);
     const [feedbackMessage, setFeedbackMessage] = useState('');
+    const [runningCount, setRunningCount] = useState(0);
+    const [cardsDealt, setCardsDealt] = useState(0);
+    const [decksRemaining, setDecksRemaining] = useState(DECKS_IN_PLAY);
+
+    function updateCount(card) {
+        const value = card.rank;
+        if (['2', '3', '4', '5', '6'].includes(value)) {
+            setRunningCount(prev => prev + 1);
+        } else if (['10', 'J', 'Q', 'K', 'A'].includes(value)) {
+            setRunningCount(prev => prev - 1);
+        }
+        // 7–9 are neutral, no update
+    }
 
     function calculateHandValue(hand) {
         let value = 0;
@@ -362,6 +400,24 @@ function GamePage() {
         }, 2000); // 2-second delay for effect
     };
 
+    const countCardsInPlay = () => {
+        const playerCardCount = playerHands.flat().length;
+        const dealerCardCount = dealerHand.length;
+        return playerCardCount + dealerCardCount;
+    };
+
+    useEffect(() => {
+        const decks = Math.max((TOTAL_CARDS - cardsDealt) / 52, 1);
+        setDecksRemaining(decks);
+    }, [cardsDealt]);
+
+    useEffect(() => {
+        if (!isPlaying) {
+            console.log("🃏 Deck after hand:", deck);
+            console.log("🃏 Deck length:", deck.length);
+        }
+    }, [isPlaying]);
+
     return (
     <div style={{ textAlign: 'center' }}>
         <h2>Blackjack Table</h2>
@@ -433,6 +489,8 @@ function GamePage() {
         </div>
         ))}
 
+        <div>Decks Remaining: {decksRemaining.toFixed(1)}</div>
+
         {/* Bank */}
         <div className="bank" style={{ marginTop: '10rem' }}>
             {"$" + bankroll}
@@ -446,6 +504,8 @@ function GamePage() {
             {"$" + currentBet}
             <Button label="Undo Bets" onClick={handleUndo} disabled={currentBet <= 0 || isPlaying} />
         </div>
+
+        {runningCount}
     </div>
     );
 }

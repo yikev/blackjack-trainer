@@ -2,6 +2,8 @@
 import React from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import GamePage from './pages/GamePage';
+import Button from './components/Button';
+import TutorialPage from './pages/TutorialPage';
 
 function HomePage() {
   const navigate = useNavigate();
@@ -21,6 +23,7 @@ function HomePage() {
     }}>
       <h1>♠️ Blackjack Card Counter ♦️</h1>
       <p>A web app to help you learn and practice card counting.</p>
+      <Button label="Start Tutorial" onClick={() => navigate('/tutorial')} />
       <button style={{
           marginTop: '2rem',
           padding: '0.75rem 1.5rem',
@@ -40,6 +43,7 @@ function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/game" element={<GamePage />} />
+      <Route path="/tutorial" element={<TutorialPage />} /> 
     </Routes>
   );
 }
