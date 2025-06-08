@@ -19,6 +19,8 @@ function GamePage() {
         setDealerHand([]);
         setCurrentBet(0);
         setBankroll(1000);
+        setRunningCount(0);
+        setDecksRemaining(6);
         setIsPlaying(false); // ⬅ Game is no longer active
         console.log('Resetting table...');
     };
