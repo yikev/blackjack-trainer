@@ -1,24 +1,31 @@
+// Chip.jsx
+import React from 'react';
+import './Chip.css';
+
+const CHIP_COLORS = {
+  1: 'white',
+  5: 'red',
+  25: 'green',
+  50: 'blue',
+  100: 'black',
+  500: 'purple',
+};
 
 function Chip({ label, onClick, disabled = false }) {
+  const color = CHIP_COLORS[label] || 'gray';
+
   return (
     <div
-      onClick={onClick}
-      disabled={disabled}
+      className={`chip chip-${label}`}
       style={{
-        // padding: '0.75rem 1.5rem',
-        // margin: '0.5rem',
-        // fontSize: '1rem',
-        height: '5rem',
-        width: '5rem',
-        backgroundColor: disabled ? '#ccc' : '#007bff',
-        color: 'white',
-        border: 'none',
-        borderRadius: '50%',
+        backgroundColor: color,
+        color: color === 'white' ? 'black' : 'white',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        transition: 'background-color 0.2s ease',
+        opacity: disabled ? 0.5 : 1,
       }}
+      onClick={() => !disabled && onClick(label)}
     >
-      {label}
+      ${label}
     </div>
   );
 }

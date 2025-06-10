@@ -1,7 +1,7 @@
 // src/components/Button.jsx
 import React from 'react';
 
-function Button({ label, onClick, disabled = false }) {
+function Button({ label, onClick, disabled = false, style = {} }) {
   return (
     <button
       onClick={onClick}
@@ -16,6 +16,7 @@ function Button({ label, onClick, disabled = false }) {
         borderRadius: '6px',
         cursor: disabled ? 'not-allowed' : 'pointer',
         transition: 'background-color 0.2s ease',
+        ...style, // allow overrides
       }}
     >
       {label}

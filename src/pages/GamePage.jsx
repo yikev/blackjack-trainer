@@ -53,20 +53,21 @@ function GamePage() {
     setDeck(newDeck);
     setSplitActive(false);
     setIsPlaying(true); // temporarily true to block other actions
+    setIsDealing(true);
 
     // Step-by-step delay
     setTimeout(() => {
         setPlayerHands([[p1]]);
-    }, 300);
+    }, 500);
     setTimeout(() => {
         setDealerHand([d1]);
-    }, 600);
+    }, 1000);
     setTimeout(() => {
         setPlayerHands([[p1, p2]]);
-    }, 900);
+    }, 1500);
     setTimeout(() => {
         setDealerHand([d1, { ...d2, faceDown: true }]);
-    }, 1200);
+    }, 2000);
 
     // Evaluate hands AFTER animations
     setTimeout(async () => {
@@ -92,6 +93,7 @@ function GamePage() {
             setCurrentBet(0);
             setIsPlaying(false);
             resetHands();
+            setPlacedChips([]);
         } else if (playerHasBJ) {
             console.log("Player has blackjack! Wins 3:2.");
             showFeedback('Player hits Blackjack! 🎉');
@@ -99,7 +101,9 @@ function GamePage() {
             setCurrentBet(0);
             setIsPlaying(false);
             resetHands();
+            setPlacedChips([]);
         } else {
+            setIsDealing(false);
             setIsPlaying(true); // game continues
         }
     }, 1500); // After last card is dealt
@@ -133,6 +137,7 @@ function GamePage() {
             // round ends, player loses
             setIsPlaying(false);
             resetHands();
+            setPlacedChips([]);
             setCurrentBet(0); // 💥 Reset the bet on bust
             }
         }
@@ -153,6 +158,7 @@ function GamePage() {
         i === 1 ? { ...card, faceDown: false } : card
         );
         setDealerHand(revealed);
+        setDealerRevealed(true);
 
         // Optional tiny delay to separate flip from draw visually
         await sleep(800);
@@ -217,7 +223,9 @@ function GamePage() {
         setDeck(newDeck);
         setIsPlaying(false);
         setIsDealing(false);
+        setPlacedChips([]);
         resetHands();
+        setPlacedChips([]);
     };
     const handleSplit = () => {
         const currentHand = playerHands[0];
@@ -270,12 +278,14 @@ function GamePage() {
     const handleUndo = () => {
         setBankroll(bankroll + currentBet);
         setCurrentBet(0);
+        setPlacedChips([]);
         console.log(`bankroll reset to: ${bankroll} and current bet reset to: ${currentBet}`);
     }
     const handleBet = (amount) => {
         if (bankroll >= amount) {
             setBankroll(bankroll - amount);
             setCurrentBet(currentBet + amount);
+            setPlacedChips(prev => [...prev, amount]);
             console.log(`Betting $${amount}. New bankroll: $${bankroll - amount}`);
         } else {
             console.log("Insufficient funds");
@@ -297,6 +307,8 @@ function GamePage() {
     const [cardsDealt, setCardsDealt] = useState(0);
     const [numDecks, setNumDecks] = useState(2);
     const [decksRemaining, setDecksRemaining] = useState(numDecks);
+    const [dealerRevealed, setDealerRevealed] = useState(false);
+    const [placedChips, setPlacedChips] = useState([]);
 
     const TOTAL_CARDS = numDecks * 52;
 
@@ -335,33 +347,42 @@ function GamePage() {
     }
 
     function getDisplayValue(hand) {
-        let total = 0;
-        let aceCount = 0;
+  let total = 0;
+  let aceCount = 0;
 
-        for (const card of hand) {
-            if (['J', 'Q', 'K'].includes(card.rank)) {
-            total += 10;
-            } else if (card.rank === 'A') {
-            total += 11;
-            aceCount++;
-            } else {
-            total += parseInt(card.rank);
-            }
-        }
-
-        let softTotal = total;
-        while (softTotal > 21 && aceCount > 0) {
-            softTotal -= 10;
-            aceCount--;
-        }
-
-        // If we have an ace being counted as 11 and the soft and hard values differ
-        if (softTotal !== total && softTotal <= 21) {
-            return `${softTotal} / ${total}`; // e.g., 5 / 15
-        } else {
-            return `${softTotal}`; // single value
-        }
+  for (const card of hand) {
+    if (['J', 'Q', 'K'].includes(card.rank)) {
+      total += 10;
+    } else if (card.rank === 'A') {
+      total += 11;
+      aceCount++;
+    } else {
+      total += parseInt(card.rank);
     }
+  }
+
+  let softTotal = total;
+  while (softTotal > 21 && aceCount > 0) {
+    softTotal -= 10;
+    aceCount--;
+  }
+
+  const hasAce = hand.some(card => card.rank === 'A');
+  const hardTotal = total;
+
+  // If hard total is over 21, only show the soft total
+  if (hardTotal > 21) {
+    return `${softTotal}`;
+  }
+
+  // If hand has an Ace and totals differ, show both
+  if (hasAce && softTotal !== hardTotal) {
+    return `${softTotal} / ${hardTotal}`;
+  }
+
+  // Default: show the soft total
+  return `${softTotal}`;
+}
 
     function formatHandValue(hand) {
         const { softValue, hardValue } = calculateHandValue(hand);
@@ -443,6 +464,20 @@ function GamePage() {
             </div>
         )}
 
+        <div style={{
+            position: 'absolute',
+            top: '1rem',
+            left: '1rem',
+            fontWeight: 'bold',
+            fontSize: '1.2rem',
+            backgroundColor: 'white',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            }}>
+            Bankroll: ${bankroll}
+        </div>
+
         <div style={{ marginBottom: '1rem' }}>
         <label htmlFor="deckSelect">Number of Decks: </label>
         <select
@@ -468,12 +503,58 @@ function GamePage() {
 
         {/* Buttons */}
         <div style={{ marginTop: '2rem' }}>
-            <Button label="Reset" onClick={handleReset}/>
-            <Button label="Deal" onClick={handleDeal} disabled={currentBet <= 0 || isPlaying} />
-            <Button label="Hit" onClick={handleHit} disabled={!isPlaying || isDealing}/>
-            <Button label="Stand" onClick={handleStand} disabled={!isPlaying || isDealing}/>
-            <Button label="Split" onClick={handleSplit} disabled={!isPlaying || isDealing}/>
-            <Button label="Double" onClick={handleDouble} disabled={!isPlaying || isDealing}/>
+            <Button
+                label="Reset"
+                onClick={handleReset}
+                style={{
+                    position: 'absolute',
+                    top: '3rem',
+                    left: '0.5rem',
+                    fontWeight: 'bold',
+                    padding: '0.5rem 1.2rem',
+                }}
+            />
+            {!isPlaying && (
+                <Button label="Deal" onClick={handleDeal} style={{
+                    position: 'absolute',
+                    top: '30rem',
+                    left: '41rem',
+                    fontWeight: 'bold',
+                    padding: '0.5rem 1.2rem',
+                }} disabled={currentBet <= 0 || isPlaying} />
+            )}
+            {isPlaying && (
+            <div style={{ marginTop: '2rem' }}>
+                <Button label="Hit" onClick={handleHit} style={{
+                    position: 'absolute',
+                    top: '30rem',
+                    left: '33rem',
+                    fontWeight: 'bold',
+                    padding: '0.5rem 1.2rem',
+                }}  disabled={isDealing} />
+                <Button label="Stand" onClick={handleStand} style={{
+                    position: 'absolute',
+                    top: '30rem',
+                    left: '60rem',
+                    fontWeight: 'bold',
+                    padding: '0.5rem 1.2rem',
+                }} disabled={isDealing} />
+                <Button label="Split" onClick={handleSplit} style={{
+                    position: 'absolute',
+                    top: '30rem',
+                    left: '49rem',
+                    fontWeight: 'bold',
+                    padding: '0.5rem 1.2rem',
+                }} disabled={isDealing} />
+                <Button label="Double" onClick={handleDouble} style={{
+                    position: 'absolute',
+                    top: '33rem',
+                    left: '49rem',
+                    fontWeight: 'bold',
+                    padding: '0.5rem 1.2rem',
+                }} disabled={isDealing} />
+            </div>
+            )}
         </div>
 
         {/* Cards */}
@@ -487,6 +568,11 @@ function GamePage() {
             faceDown={card.faceDown}
             />
         ))}
+            {dealerRevealed && (
+                <div style={{ marginTop: '0.3rem', fontWeight: 'bold' }}>
+                    Value: {getDisplayValue(dealerHand)}
+                </div>
+            )}
         </div>
 
         <h3>Player Hands</h3>
@@ -519,22 +605,52 @@ function GamePage() {
         ))}
 
         <div>Decks Remaining: {decksRemaining.toFixed(1)}</div>
+        {"Running count: " + runningCount}
 
-        {/* Bank */}
-        <div className="bank" style={{ marginTop: '10rem' }}>
-            {"$" + bankroll}
-            <Button label="All In" onClick={() => handleBet(bankroll)} disabled={bankroll <= 0 || isPlaying} />
-            <Chip label="1" onClick={() => handleBet(1)} disabled={bankroll < 1 || isPlaying} />
-            <Chip label="5" onClick={() => handleBet(5)} disabled={bankroll < 5 || isPlaying} />
-            <Chip label="25" onClick={() => handleBet(25)} disabled={bankroll < 25 || isPlaying} />
-            <Chip label="50" onClick={() => handleBet(50)} disabled={bankroll < 50 || isPlaying} />
-            <Chip label="100" onClick={() => handleBet(100)} disabled={bankroll < 100 || isPlaying} />
-            <Chip label="500" onClick={() => handleBet(500)} disabled={bankroll < 500 || isPlaying} />
-            {"$" + currentBet}
-            <Button label="Undo Bets" onClick={handleUndo} disabled={currentBet <= 0 || isPlaying} />
+        {/* Betting Area */}
+        <div
+        id="betting-area"
+        style={{
+            minHeight: '80px',
+            marginTop: '2rem',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '0.5rem',
+            flexWrap: 'wrap',
+            padding: '1rem',
+            border: '2px dashed #888',
+            borderRadius: '12px',
+            width: 'fit-content',
+            marginInline: 'auto',
+            backgroundColor: '#fdfdfd',
+            boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+        }}
+        >
+        {/* Render placed chips here */}
+        {placedChips.map((chip, index) => (
+            <Chip key={index} label={chip} onClick={() => {}} disabled />
+        ))}
         </div>
 
-        {runningCount}
+       {/* Bank */}
+        <div className="bank" style={{ marginTop: '10rem' }}>
+
+            {!isPlaying && (
+                <>
+                    <Button label="All In" onClick={() => handleBet(bankroll)} disabled={bankroll <= 0} />
+                    <Chip label="1" onClick={() => handleBet(1)} disabled={bankroll < 1} />
+                    <Chip label="5" onClick={() => handleBet(5)} disabled={bankroll < 5} />
+                    <Chip label="25" onClick={() => handleBet(25)} disabled={bankroll < 25} />
+                    <Chip label="50" onClick={() => handleBet(50)} disabled={bankroll < 50} />
+                    <Chip label="100" onClick={() => handleBet(100)} disabled={bankroll < 100} />
+                    <Chip label="500" onClick={() => handleBet(500)} disabled={bankroll < 500} />
+                    <Button label="Undo Bets" onClick={handleUndo} disabled={currentBet <= 0} />
+                </>
+            )}
+
+            {"Current bet: $" + currentBet}
+        </div>
     </div>
     );
 }
